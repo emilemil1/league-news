@@ -1,0 +1,24 @@
+{
+  "name": "league-news",
+  "version": "0.0.1",
+  "description": "Scraping and presentation of league news.",
+  "main": "scrape.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emilemil1/league-news.git"
+  },
+  "keywords": [
+    "league",
+    "of",
+    "legends"
+  ],
+  "author": "Emil Norén",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/emilemil1/league-news/issues"
+  },
+  "homepage": "https://github.com/emilemil1/league-news#readme"
+}
