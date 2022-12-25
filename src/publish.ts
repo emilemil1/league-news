@@ -15,4 +15,4 @@ fs.readdirSync("dist/content", "utf-8")
     .filter(filename => filename.endsWith("compressed"))
     .forEach(filename => fs.copyFileSync("dist/content/" + filename, "dist/webpage/content/" + filename));
 
-child_process.execSync('git subtree push --prefix dist/webpage origin gh-pages');
+child_process.execSync('git subtree push --prefix dist/webpage league-news gh-pages');
