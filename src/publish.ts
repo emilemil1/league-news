@@ -6,7 +6,7 @@ child_process.execSync('git commit -m "automatic refresh"');
 child_process.execSync('git push');
 
 fs.mkdirSync("dist/webpage/content");
-fs.readdirSync("dist/content")
+fs.readdirSync("dist/content", "utf-8")
     .filter(filename => filename.endsWith("compressed"))
     .forEach(filename => fs.copyFileSync("dist/content/" + filename, "dist/webpage/content/" + filename));
 
