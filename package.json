@@ -11,7 +11,8 @@
   "scripts": {
     "scrape": "tsc && node --no-warnings --enable-source-maps out/scraping/scrape.js",
     "dev": "vite -c out/webpage/vite.config.js",
-    "build": "tsc && vite build -c out/webpage/vite.config.js"
+    "build": "tsc && vite build -c out/webpage/vite.config.js",
+    "publish": "tsc && node out/publish.js"
   },
   "repository": {
     "type": "git",

@@ -6,7 +6,7 @@ export default defineConfig({
   root: "src/webpage/",
   build: {
     outDir: "../../dist/webpage/",
-    emptyOutDir: true,
+    emptyOutDir: false,
     lib: {
       entry: 'index.ts',
       formats: [ 'es' ],
