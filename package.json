@@ -2,23 +2,39 @@
   "name": "league-news",
   "version": "0.0.1",
   "description": "Scraping and presentation of league news.",
-  "main": "scrape.js",
+  "type": "module",
+  "main": "out/scrape.js",
+  "files": [
+    "dist",
+    "out"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "scrape": "tsc && node --no-warnings --enable-source-maps out/scraping/scrape.js",
+    "dev": "vite -c out/webpage/vite.config.js",
+    "build": "tsc && vite build -c out/webpage/vite.config.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/emilemil1/league-news.git"
   },
-  "keywords": [
-    "league",
-    "of",
-    "legends"
-  ],
   "author": "Emil Norén",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/emilemil1/league-news/issues"
   },
-  "homepage": "https://github.com/emilemil1/league-news#readme"
+  "homepage": "https://github.com/emilemil1/league-news#readme",
+  "devDependencies": {
+    "@types/node": "^18.11.14",
+    "vite": "^4.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "google-auth-library": "^8.7.0",
+    "googleapis": "^109.0.1",
+    "lit": "^2.4.1",
+    "snoowrap": "^1.23.0",
+    "twitter-api-sdk": "^1.2.1"
+  }
 }
