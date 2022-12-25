@@ -11,7 +11,6 @@ type Content = {
     authors: Record<CommentId, string>;
     subreddit: Record<CommentId | PostId, string>;
     riotUsers: Record<string, Date>;
-    lastIndexedDate: Date;
 };
 
 export default class LeagueDevRedditScraper extends Scraper<Content> {
@@ -22,8 +21,7 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
             posts: {},
             authors: {},
             subreddit: {},
-            riotUsers: {},
-            lastIndexedDate: new Date()
+            riotUsers: {}
         };
     }
 
@@ -151,11 +149,9 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
             accessToken: credentials.access_token
         });
 
-        newContent.lastIndexedDate = new Date();
-        if (oldContent.lastIndexedDate === undefined) {
-            oldContent.lastIndexedDate = new Date();
-            oldContent.lastIndexedDate.setDate(oldContent.lastIndexedDate.getDate() - 1);
-        }
+        const commentsArray = Object.values(oldContent.comments);
+        commentsArray.sort((d1, d2) => d2.getTime() - d1.getTime());
+        const latestCommentDate = commentsArray[ 0 ];
 
         for (const riotUser in oldContent.riotUsers) {
             if (oldContent.riotUsers[ riotUser ] >= scrapeOptions.maxAge) {
@@ -164,7 +160,7 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
         }
         newContent.riotUsers = {
             ...newContent.riotUsers,
-            ...(await this.findRiotUsers(client, oldContent.lastIndexedDate))
+            ...(await this.findRiotUsers(client, latestCommentDate))
         };
 
         const promises = [];
@@ -173,9 +169,11 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
         }
         const results = (await Promise.all(promises)).flatMap(arr => arr);
 
+        const newEntries = results.filter(result => result.inherited === false).length;
+
         return {
             content: newContent,
-            newEntries: results.filter(result => result.inherited === false).length,
+            newEntries: newEntries,
             totalEntries: results.length
         };
     }
