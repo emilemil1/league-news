@@ -3,21 +3,22 @@ import Snoowrap from "snoowrap";
 
 type CommentId = string;
 type PostId = string;
+type RiotVisibility = "Visible" | "Invisible" | "Uncategorized";
 
 type Content = {
     comments: Record<CommentId, Date>;
-    parents: Record<CommentId, CommentId>;
     posts: Record<CommentId, PostId>;
     authors: Record<CommentId, string>;
     subreddit: Record<CommentId | PostId, string>;
-    riotUsers: Record<string, Date>;
+    riotUsers: Record<string, RiotVisibility>;
 };
 
 export default class LeagueDevRedditScraper extends Scraper<Content> {
+    riotNameRegex = /\[([^\]]*)\]$/gm;
+    validSubreddits = /^leagueoflegends$|^aram$|^.*mains$/gm;
     initContent(): Content {
         return {
             comments: {},
-            parents: {},
             posts: {},
             authors: {},
             subreddit: {},
@@ -39,10 +40,6 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
             const postId = oldContent.posts?.[ comment.id ];
             if (postId !== undefined) {
                 newContent.posts[ comment.id ] = postId;
-            }
-            const parentId = oldContent.parents[ comment.id ];
-            if (parentId !== undefined) {
-                newContent.parents[ comment.id ] = parentId;
             }
             result.inherited = true;
         }
@@ -66,11 +63,6 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
             result.newInformation = true;
         }
 
-        if (newContent.parents[ comment.id ] === undefined && parentId !== postId) {
-            newContent.parents[ comment.id ] = parentId;
-            result.newInformation = true;
-        }
-
         return result;
     }
 
@@ -91,6 +83,9 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
                 if (new Date(comment.created_utc * 1000) < scrapeOptions.maxAge) {
                     return results;
                 }
+                if (!this.validSubreddits.test(comment.subreddit.display_name.toLowerCase())) {
+                    continue;
+                }
                 const result = this.processComment(comment, newContent, oldContent);
                 results.push(result);
                 if (results.length === scrapeOptions.maxEntries) {
@@ -102,12 +97,13 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
         return results;
     }
 
-    async findRiotUsers(client: Snoowrap, lastIndexedDate: Date): Promise<Record<string, Date>> {
-        const riotUsers: Record<string, Date> = {};
+    async findRiotUsers(client: Snoowrap, maxDate: Date): Promise<Record<string, RiotVisibility>> {
+        const riotUsers: Record<string, RiotVisibility> = {};
         let paginationToken: string | undefined;
         let count = 0;
+        let lastDate: Date | undefined = undefined;
         do {
-            const response: Snoowrap.Listing<Snoowrap.Comment> = await client.getSubreddit("leagueoflegends").getNewComments({
+            const response: Snoowrap.Listing<Snoowrap.Submission> = await client.getSubreddit("leagueofriot").getNew({
                 limit: 100,
                 after: paginationToken,
                 count
@@ -115,18 +111,16 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
             count += response.length;
             paginationToken = response[ response.length - 1 ]?.name;
 
-            let lastDate: Date | undefined = undefined;
-            for (const comment of response ?? []) {
-                if (!comment.author_flair_text?.toLowerCase().includes(":riot:")) {
-                    continue;
+            for (const post of response ?? []) {
+                lastDate = new Date(post.created_utc * 1000);
+                const name = this.riotNameRegex.exec(post.title)?.[ 1 ] ?? undefined;
+                this.riotNameRegex.lastIndex = 0;
+                if (name === undefined) {
+                    throw new Error("Could not parse leagueofriot title: " + post.title);
                 }
-
-                lastDate = new Date(comment.created_utc * 1000);
-                if (riotUsers[ comment.author.name ] === undefined || lastDate > riotUsers[ comment.author.name ]) {
-                    riotUsers[ comment.author.name ] = lastDate;
-                }
+                riotUsers[ name ] = "Uncategorized";
             }
-            if (lastDate === undefined || lastDate.getTime() < lastIndexedDate.getTime()) {
+            if (lastDate === undefined || lastDate.getTime() < maxDate.getTime()) {
                 break;
             }
         } while (paginationToken !== undefined);
@@ -151,16 +145,15 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
 
         const commentsArray = Object.values(oldContent.comments);
         commentsArray.sort((d1, d2) => d2.getTime() - d1.getTime());
-        const latestCommentDate = commentsArray[ 0 ];
-
-        for (const riotUser in oldContent.riotUsers) {
-            if (oldContent.riotUsers[ riotUser ] >= scrapeOptions.maxAge) {
-                newContent.riotUsers[ riotUser ] = oldContent.riotUsers[ riotUser ];
-            }
+        let latestCommentDate = commentsArray[ 0 ];
+        if (latestCommentDate === undefined) {
+            latestCommentDate = new Date();
+            latestCommentDate.setDate(latestCommentDate.getDate() - 3);
         }
+
         newContent.riotUsers = {
-            ...newContent.riotUsers,
-            ...(await this.findRiotUsers(client, latestCommentDate))
+            ...(await this.findRiotUsers(client, latestCommentDate)),
+            ...oldContent.riotUsers
         };
 
         const promises = [];
@@ -185,9 +178,9 @@ export default class LeagueDevRedditScraper extends Scraper<Content> {
                 id: commentId,
                 date: content.comments[ commentId ],
                 author: content.authors[ commentId ],
+                visibility: content.riotUsers[ content.authors[ commentId ] ],
                 subreddit: content.subreddit[ commentId ],
-                post: content.posts[ commentId ],
-                parent: content.parents[ commentId ]
+                post: content.posts[ commentId ]
             });
         }
         compressed.sort((a, b) => a.date.getTime() - b.date.getTime());

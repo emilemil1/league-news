@@ -54,10 +54,10 @@ async function main() {
     scrapeOptions.maxAge.setDate(scrapeOptions.maxAge.getDate() - 60);
 
     const scrapers: Record<string, Scraper<unknown>> = {
-        official_articles: new OfficialArticlesScraper(),
-        league_dev_twitter: new LeagueDevTwitterScraper(),
+        //official_articles: new OfficialArticlesScraper(),
+        //league_dev_twitter: new LeagueDevTwitterScraper(),
         league_dev_reddit: new LeagueDevRedditScraper(),
-        official_youtube: new OfficialYouTubeScraper()
+        //official_youtube: new OfficialYouTubeScraper()
     };
 
     let newEntriesTotal = 0;
